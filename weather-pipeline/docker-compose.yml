@@ -1,7 +1,11 @@
 x-airflow-common: &airflow-common
-  image: apache/airflow:2.5.3
+  # build:
+  #   context: .
+  #   dockerfile: Dockerfile
+  image: apache/airflow:2.5.3-python3.8
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    PYTHONPATH: "/opt/airflow"
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
@@ -40,11 +44,13 @@ x-airflow-common: &airflow-common
     _AIRFLOW_WWW_USER_ROLE: "Admin"
     _PIP_ADDITIONAL_REQUIREMENTS: ""
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
-    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
-    - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
-    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - ${AIRFLOW_PROJ_DIR:-.}/output:/opt/airflow/output
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./config:/opt/airflow/config
+    - ./plugins:/opt/airflow/plugins
+    - ./output:/opt/airflow/output
+    - ./pipeline_tasks:/opt/airflow/pipeline_tasks
+    - ./utils:/opt/airflow/utils
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     postgres:
@@ -197,7 +203,7 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: ""
     user: "0:0"
     volumes:
-      - ${AIRFLOW_PROJ_DIR:-.}:/sources
+      - .:/sources
 
   airflow-cli:
     <<: *airflow-common
