@@ -27,25 +27,23 @@ def process_file(filename: str) -> Dict[str, Any]:
         processing_state['phase'] = 'downloading'
         print(f"🌐 [{processing_state['phase']}] Starting to process {filename}...")
         print(f"📡 Connecting to NOAA server...")
-
         download_start = time.time()
+
         response = http_hook.run(
             endpoint=f'pub/data/ghcn/daily/by_year/{filename}',
             extra_options={'timeout': 1800, 'stream': True}
         )
+
         download_time = time.time() - download_start
         file_size_mb = len(response.content) / (1024 * 1024)
         print(f"📥 Downloaded {filename} in {download_time:.1f}s")
         print(f"📊 File size: {file_size_mb:.1f} MB ({len(response.content):,} bytes)")
-
         processing_state['phase'] = 'processing'
         processing_state['progress_percent'] = 10
         print(f"⚙️ [{processing_state['phase']}] Processing {filename} with pandas chunking...")
-
         chunk_size = 1000000
         total_records = 0
         unique_stations = set()
-
         min_date = None
         max_date = None
         measurement_counts = {'TMAX': 0, 'TMIN': 0, 'PRCP': 0}
@@ -56,31 +54,23 @@ def process_file(filename: str) -> Dict[str, Any]:
 
         with gzip.open(io.BytesIO(response.content), 'rt') as f:
             chunk_number = 0
-
             for chunk_df in pd.read_csv(f, header=None, chunksize=chunk_size,
                                         names=['ID', 'DATE', 'ELEMENT', 'VALUE', 'MFLAG', 'QFLAG', 'SFLAG', 'OBSTIME'],
                                         dtype={'ID': 'str', 'DATE': 'str', 'ELEMENT': 'str', 'VALUE': 'float64'}):
-
                 chunk_number += 1
                 processing_state['current_chunk'] = chunk_number
-
                 if chunk_number == 1:
                     estimated_rows = len(response.content) // 100
                     processing_state['total_chunks_estimated'] = max(1, estimated_rows // chunk_size)
-
                 # noinspection PyTypeChecker
                 progress = min(90, 10 + (chunk_number / max(1, processing_state['total_chunks_estimated'])) * 80)
                 processing_state['progress_percent'] = int(progress)
-
                 print(f"📊 Chunk {chunk_number}: {len(chunk_df):,} records | Progress: {processing_state['progress_percent']}%")
-
                 chunk_records = len(chunk_df)
                 total_records += chunk_records
-
                 if len(unique_stations) < 100000:
                     unique_stations.update(chunk_df['ID'].unique()[:1000])  # Limit per chunk
 
-                # Date processing
                 try:
                     chunk_df['DATE'] = pd.to_datetime(chunk_df['DATE'], format='%Y%m%d', errors='coerce')
                     valid_dates = chunk_df['DATE'].dropna()
@@ -98,19 +88,15 @@ def process_file(filename: str) -> Dict[str, Any]:
                     # noinspection PyUnresolvedReferences
                     measurement_counts[element] += (chunk_df['ELEMENT'] == element).sum()
 
-
                 try:
                     delta_tmax_sum, delta_tmax_count = calculate_element_stats(chunk_df, 'TMAX')
                     tmax_sum += delta_tmax_sum
                     tmax_count += delta_tmax_count
-
                     delta_tmin_sum, delta_tmin_count = calculate_element_stats(chunk_df, 'TMIN')
                     tmin_sum += delta_tmin_sum
                     tmin_count += delta_tmin_count
-
                 except Exception as temp_error:
                     print(f"⚠️ Temperature calculation warning in chunk {chunk_number}: {str(temp_error)}")
-
                 if chunk_number % 3 == 0:
                     import gc
                     gc.collect()
@@ -118,7 +104,6 @@ def process_file(filename: str) -> Dict[str, Any]:
         processing_state['phase'] = 'finalizing'
         processing_state['progress_percent'] = 95
         print(f"✅ [{processing_state['phase']}] Finished processing {filename}: {total_records:,} total records in {chunk_number} chunks")
-
         date_range = {
             'start': min_date.strftime('%Y-%m-%d') if min_date else 'N/A',
             'end': max_date.strftime('%Y-%m-%d') if max_date else 'N/A'

@@ -1,4 +1,3 @@
-
 from datetime import datetime, timedelta
 
 from airflow import DAG
@@ -16,8 +15,6 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(minutes=2),
 }
-
-
 
 with DAG(
     'weather_data_pipeline',

@@ -9,7 +9,6 @@ from airflow.decorators import task
 def consolidate_results(results: List[Dict[str, Any]]) -> str:
     import os
 
-    # Progress tracking (inspired by LangGraph state management)
     successful_files = [r for r in results if r is not None and r.get('status') != 'failed']
     failed_files = [r for r in results if r is not None and r.get('status') == 'failed']
     failed_count = len(failed_files)
@@ -58,7 +57,6 @@ def consolidate_results(results: List[Dict[str, Any]]) -> str:
     print(f"🗓️ Date range: {consolidated['aggregate_statistics']['date_range_overall']['earliest']} to {consolidated['aggregate_statistics']['date_range_overall']['latest']}")
     print(f"⏱️ Average processing time: {consolidated['aggregate_statistics']['average_processing_time_per_file']}s per file")
 
-    # Save to file on local machine (mounted volume)
     output_dir = '/opt/airflow/output'
     os.makedirs(output_dir, exist_ok=True)
 
