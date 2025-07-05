@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := start
-.PHONY: start stop restart logs clean status health dev test
+.PHONY: start stop restart logs clean status health test
 
 start: ## Start LangGraph service
 	@echo "Starting LangGraph service..."
@@ -36,10 +36,6 @@ test: ## Test API endpoint
 logs: ## Show service logs
 	@echo "Showing LangGraph logs (Ctrl+C to exit)..."
 	@docker compose logs -f
-
-dev: ## Start in development mode (with logs)
-	@echo "Starting LangGraph in development mode..."
-	@docker compose up --build
 
 clean: ## Clean environment and volumes
 	@echo "Cleaning LangGraph environment..."

@@ -1,6 +1,6 @@
 # Sum of Squares API - LangGraph Map-Reduce
 
-LangGraph-powered Map-Reduce service for calculating sum of squares of random integers.
+LangGraph-powered Map-Reduce service for calculating sum-of-squares from random integers.
 
 **Part of Deriva.ai Take-Home Assignment - Task 2**
 
@@ -63,7 +63,6 @@ make test     # Test API endpoint
 | `make health` | Check service health |
 | `make test` | Test API endpoint |
 | `make logs` | Show service logs |
-| `make dev` | Start in development mode (with logs) |
 | `make clean` | Clean environment and volumes |
 
 ## API Usage
@@ -183,29 +182,6 @@ print(f"Results match: {result['sum_of_squares'] == manual_check}")
 3. Update `requirements.txt` for dependencies
 4. Rebuild with `docker compose up --build`
 
-## Performance
-
-### Benchmarks
-
-| Length | Processing Time | Memory Usage |
-|--------|----------------|--------------|
-| 100    | ~50ms          | <10MB        |
-| 1000   | ~200ms         | <50MB        |
-| 10000  | ~2s            | <200MB       |
-
-### Optimization
-
-- **Parallel Execution**: Send API maximizes concurrency
-- **Memory Efficient**: Streaming result aggregation
-- **Fast Startup**: Lightweight Flask + LangGraph stack
-
-## Configuration
-
-### Environment Variables
-
-- `PORT`: Server port (default: 5000)
-- `FLASK_DEBUG`: Debug mode (default: false)
-
 ### Docker Settings
 
 - **Image**: Python 3.11 slim
@@ -214,8 +190,6 @@ print(f"Results match: {result['sum_of_squares'] == manual_check}")
 - **Restart Policy**: unless-stopped
 
 ## Monitoring
-
-### Health Check
 
 ```bash
 GET /health
@@ -242,33 +216,6 @@ Response:
 - **Error Rate**: Failed requests percentage
 - **Parallel Tasks**: Active mapper count
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Port Conflicts**
-   - Change port in `docker-compose.yml`
-   - Default: 5000
-
-2. **Memory Issues**
-   - Reduce request length
-   - Maximum: 10,000 numbers
-
-3. **Build Failures**
-   - Check Docker daemon status
-   - Verify requirements.txt
-
-### Debug Mode
-
-```bash
-docker compose up --build -e FLASK_DEBUG=true
-```
-
-### Container Logs
-
-```bash
-docker compose logs -f sum-of-squares
-```
 
 ## Testing
 
@@ -278,23 +225,12 @@ docker compose logs -f sum-of-squares
 python -m pytest tests/
 ```
 
-### Integration Tests
+### Test
 
 ```bash
 curl -X POST http://localhost:5000/sum_of_squares \
   -H "Content-Type: application/json" \
   -d '{"length": 5}'
-```
-
-### Load Testing
-
-```bash
-for i in {1..10}; do
-  curl -X POST http://localhost:5000/sum_of_squares \
-    -H "Content-Type: application/json" \
-    -d '{"length": 100}' &
-done
-wait
 ```
 
 ## Cleanup

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := start
-.PHONY: build init start stop restart logs clean status health run-dag cli
+.PHONY: build init start stop restart logs clean status health run-dag
 
 build: ## Build custom Airflow image
 	@echo "Building custom Airflow image..."
@@ -51,10 +51,6 @@ run-dag: ## Trigger weather data pipeline DAG
 		echo "" && \
 		echo "✅ Weather data pipeline DAG triggered successfully!" || \
 		{ echo "❌ Failed to trigger DAG. Check credentials or service status."; exit 1; }
-
-cli: ## Access Airflow CLI
-	@echo "Accessing Airflow CLI..."
-	@docker compose run --rm airflow-worker airflow --help
 
 clean: ## Clean environment and volumes
 	@echo "Cleaning Airflow environment..."
