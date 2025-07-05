@@ -1,0 +1,91 @@
+---
+description: Deriva.ai Take-Home Assignment Requirements and Best 
+globs:
+alwaysApply: true
+---
+
+# Deriva.ai Project Requirements
+
+## Task 1: Apache Airflow ETL Pipeline
+
+### Mandatory Technical Requirements
+- **Apache Airflow 2.5+** with Python ≥ 3.8
+- **HTTPHook**: MANDATORY for every remote call to NOAA data source
+- **Dynamic Task Mapping**: MUST be used for fan-out parallel processing
+- **Docker Compose**: Required for easy spin-up
+
+### Data Source & Processing
+- Source: https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_year/
+- Target files: 2020.csv.gz through 2023.csv.gz
+- Pipeline must be: **idempotent**, **fault-tolerant**, runnable with `docker compose up`
+
+### Required Pipeline Structure
+1. **File Discovery**: HTTPHook to list directory, filter years 2020-2023
+2. **Parallel Extraction**: Dynamic Task Mapping for download/decompress/validate
+3. **Results Consolidation**: JSON output with specific schema
+
+### Project Structure (Mandatory)
+```
+weather-pipeline/
+├── dags/weather_data_pipeline.py
+├── docker-compose.yml  
+├── requirements.txt
+└── README.md
+```
+
+### Required JSON Output Schema
+```json
+{
+  "file_name": "YYYY.csv.gz",
+  "processed_at": "ISO timestamp",
+  "total_records": int,
+  "unique_stations": int,
+  "date_range": {"start": "YYYY-MM-DD", "end": "YYYY-MM-DD"},
+  "measurement_counts": {"TMAX": int, "TMIN": int, "PRCP": int},
+  "temperature_stats": {"avg_max_c": float, "avg_min_c": float},
+  "processing_seconds": float
+}
+```
+
+## Task 2: LangGraph Map-Reduce
+
+### Mandatory Technical Requirements  
+- **Python ≥ 3.9**, **LangGraph latest**, **Flask**
+- **Send API**: MUST be used for parallel mapper execution
+- **60-90 second screen recording** in LangGraph Studio showing fan-out/fan-in
+
+### Required Endpoint
+- `POST /sum_of_squares {"length": 100}` → `{"sum_of_squares": 123456}`
+
+### Required Graph Design
+1. **Generator Node**: produce list of random ints (0-99)
+2. **Mapper Branch**: square each number in **parallel** (Send API)  
+3. **Reducer Node**: sum results and return JSON
+
+### Project Structure (Mandatory)
+```
+sum-of-squares/
+├── app.py              # Flask + graph bootstrap
+├── graphs/
+│   └── main_graph.py   # generator, mapper, reducer  
+├── docker-compose.yml  # one-liner startup
+├── requirements.txt
+└── README.md
+```
+
+## Evaluation Criteria
+- **Correctness**: Outputs match manual math
+- **Parallelism**: Mapper branches run concurrently (SendAPI evidence)
+- **Clarity**: Nodes/edges named, code clean
+- **Resilience**: Graceful handling of bad input/failures
+- **Understanding**: Ability to explain every decision
+
+## Implementation Guidelines
+- Use Context7 for latest documentation to avoid deprecated code
+- Write DRY (Don't Repeat Yourself) code
+- Account for linters when forming code
+- All remote calls must use HTTPHook (Task 1)
+- Parallel execution must use Send API (Task 2)
+- Docker Compose must enable one-command startup
+- Code must be production-ready and fault-tolerant
+- Do not write comments in code, use only english letters
