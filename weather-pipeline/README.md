@@ -22,37 +22,6 @@ The pipeline consists of three main components:
 2. **Parallel Processing**: Dynamic Task Mapping for concurrent download/processing
 3. **Results Consolidation**: JSON output with standardized schema
 
-## Environment Setup
-
-Before starting, create a `.env` file with the following required variables:
-
-```bash
-# User settings
-AIRFLOW_UID=50000
-
-# Security settings  
-AIRFLOW__CORE__FERNET_KEY=your_fernet_key_here_generate_with_python_cryptography_fernet
-
-# Project settings
-AIRFLOW_PROJ_DIR=/opt/airflow
-
-# Performance settings
-AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG=4
-AIRFLOW__CORE__PARALLELISM=4
-
-# Admin user settings (login credentials)
-AIRFLOW_ADMIN_USERNAME=airflow
-AIRFLOW_ADMIN_PASSWORD=airflow
-AIRFLOW_ADMIN_FIRSTNAME=Admin
-AIRFLOW_ADMIN_LASTNAME=User
-AIRFLOW_ADMIN_EMAIL=admin@example.com
-
-# Database settings
-POSTGRES_DB=airflow
-POSTGRES_USER=airflow
-POSTGRES_PASSWORD=airflow123
-```
-
 ## Quick Start
 
 ### Using Makefile (Recommended)
