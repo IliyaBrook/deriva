@@ -45,7 +45,7 @@ make run-dag  # Trigger weather data pipeline DAG
    AIRFLOW_ADMIN_PASSWORD=airflow
    AIRFLOW_ADMIN_FIRSTNAME=Admin
    AIRFLOW_ADMIN_LASTNAME=User
-   AIRFLOW_ADMIN_EMAIL=iliyabrook1987@gmail.com
+   AIRFLOW_ADMIN_EMAIL=example@email.com
 
    AIRFLOW__CORE__FERNET_KEY=qBXKGKVUlnNDAB6FLV-yMBTwIomZZzYxI8vwLNgNJ6Y=
    ```
