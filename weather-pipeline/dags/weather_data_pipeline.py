@@ -8,7 +8,6 @@ import pandas as pd
 from airflow import DAG
 from airflow.decorators import task
 from airflow.providers.http.hooks.http import HttpHook
-from airflow.models import Variable
 
 default_args = {
     'owner': 'deriva',
@@ -19,6 +18,19 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(minutes=2),
 }
+
+def calculate_element_stats(chunk_df, element_name):
+    mask = (chunk_df['ELEMENT'] == element_name) & chunk_df['VALUE'].notna()
+    if not mask.any():
+        return 0, 0
+
+    values = chunk_df.loc[mask, 'VALUE'] / 10.0
+    valid_values = values[(values >= -100) & (values <= 100)]
+
+    if valid_values.empty:
+        return 0, 0
+
+    return valid_values.sum(), len(valid_values)
 
 @task
 def discover_files(**kwargs) -> List[str]:
@@ -35,15 +47,15 @@ def discover_files(**kwargs) -> List[str]:
             endpoint='pub/data/ghcn/daily/by_year/',
             headers={'Accept': 'text/html'}
         )
-        
-        files = []
+
+        file_list = []
         
         for year in target_years:
             filename = f"{year}.csv.gz"
             if filename in response.text:
-                files.append(filename)
+                file_list.append(filename)
                 
-        return files
+        return file_list
     except Exception as e:
         raise Exception(f"Failed to discover files: {str(e)}")
 
@@ -105,7 +117,8 @@ def process_file(filename: str) -> Dict[str, Any]:
                     # Estimate total chunks based on file size
                     estimated_rows = len(response.content) // 100  # Rough estimate
                     processing_state['total_chunks_estimated'] = max(1, estimated_rows // chunk_size)
-                
+
+                # noinspection PyTypeChecker
                 progress = min(90, 10 + (chunk_number / max(1, processing_state['total_chunks_estimated'])) * 80)
                 processing_state['progress_percent'] = int(progress)
                 
@@ -135,27 +148,21 @@ def process_file(filename: str) -> Dict[str, Any]:
                 
                 # Measurement counts (vectorized)
                 for element in ['TMAX', 'TMIN', 'PRCP']:
+                    # noinspection PyUnresolvedReferences
                     measurement_counts[element] += (chunk_df['ELEMENT'] == element).sum()
                 
                 # Temperature statistics (vectorized)
+
                 try:
-                    # TMAX processing
-                    tmax_mask = (chunk_df['ELEMENT'] == 'TMAX') & chunk_df['VALUE'].notna()
-                    if tmax_mask.any():
-                        tmax_values = chunk_df.loc[tmax_mask, 'VALUE'] / 10.0  # Convert to Celsius
-                        tmax_values = tmax_values[(tmax_values >= -100) & (tmax_values <= 100)]  # Filter outliers
-                        if not tmax_values.empty:
-                            tmax_sum += tmax_values.sum()
-                            tmax_count += len(tmax_values)
-                    
+                    delta_tmax_sum, delta_tmax_count = calculate_element_stats(chunk_df, 'TMAX')
+                    tmax_sum += delta_tmax_sum
+                    tmax_count += delta_tmax_count
+
                     # TMIN processing
-                    tmin_mask = (chunk_df['ELEMENT'] == 'TMIN') & chunk_df['VALUE'].notna()
-                    if tmin_mask.any():
-                        tmin_values = chunk_df.loc[tmin_mask, 'VALUE'] / 10.0  # Convert to Celsius
-                        tmin_values = tmin_values[(tmin_values >= -100) & (tmin_values <= 100)]  # Filter outliers
-                        if not tmin_values.empty:
-                            tmin_sum += tmin_values.sum()
-                            tmin_count += len(tmin_values)
+                    delta_tmin_sum, delta_tmin_count = calculate_element_stats(chunk_df, 'TMIN')
+                    tmin_sum += delta_tmin_sum
+                    tmin_count += delta_tmin_count
+
                 except Exception as temp_error:
                     print(f"⚠️ Temperature calculation warning in chunk {chunk_number}: {str(temp_error)}")
                 
@@ -266,6 +273,7 @@ def consolidate_results(results: List[Dict[str, Any]]) -> str:
     output_json = json.dumps(consolidated, indent=2)
     print("🎯 FINAL CONSOLIDATED RESULTS:")
     print(f"📈 Total records processed: {consolidated['aggregate_statistics']['total_records_across_all_files']:,}")
+    # noinspection PyTypeChecker
     print(f"🗓️ Date range: {consolidated['aggregate_statistics']['date_range_overall']['earliest']} to {consolidated['aggregate_statistics']['date_range_overall']['latest']}")
     print(f"⏱️ Average processing time: {consolidated['aggregate_statistics']['average_processing_time_per_file']}s per file")
     
@@ -299,5 +307,6 @@ with DAG(
     processed_results = process_file.expand(filename=files)
     
     final_output = consolidate_results(processed_results)
-    
-    files >> processed_results >> final_output 
+
+    # noinspection PyStatementEffect,PyUnresolvedReferences
+    files >> processed_results >> final_output
